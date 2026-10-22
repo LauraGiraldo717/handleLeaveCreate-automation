@@ -1,0 +1,6 @@
+/.github
+/Leave_module
+/node_modules
+/package-lock.json
+/package.json
+/playwright-bdd-framework
