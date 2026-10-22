@@ -2,13 +2,14 @@
  * @file Ciclo de vida del navegador, aislamiento por fila, limpieza y evidencias.
  * Capa: support.
  *
- *   BeforeAll  → lanza un único Chromium (headless o visible según el perfil).
+ *   BeforeAll  → toma el bloqueo de ejecución (aborta si hay otra corrida activa) y lanza un
+ *                único Chromium (headless o visible según el perfil).
  *   Before     → por fila: BrowserContext nuevo (cookies/sesión aisladas) con video y trace,
  *                carga la fila desde el tag @fila:<IdFila> y crea el Actor.
  *   AfterStep  → captura de pantalla por paso, con los campos de contraseña enmascarados.
  *   After      → captura final, limpieza de datos QA-HLC-*, cierre del trace y del video,
  *                y adjunto con datos/rutas/limpieza que usa el reporte resultados.xlsx.
- *   AfterAll   → cierra el navegador.
+ *   AfterAll   → cierra el navegador y libera el bloqueo de ejecución.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,6 +17,7 @@ import { chromium } from 'playwright';
 import { After, AfterAll, AfterStep, Before, BeforeAll, Status, setDefaultTimeout } from '@cucumber/cucumber';
 import { ENV, ROOT_DIR, TIMEOUTS } from '../config/env.js';
 import { readRow, readRunInfo } from '../controller/run-store.js';
+import { acquireRunLock, releaseRunLock, touchRunLock } from '../controller/run-lock.js';
 import { EVIDENCE_MIME } from '../models/types.js';
 import { Actor } from '../screenplay/actors/Actor.js';
 import { BrowseTheWeb } from '../screenplay/abilities/BrowseTheWeb.js';
@@ -28,10 +30,20 @@ setDefaultTimeout(TIMEOUTS.step);
 /** @type {import('playwright').Browser | undefined} */
 let browser;
 
+/**
+ * Datos de la corrida, leídos UNA vez al inicio: aunque alguien prepare otra corrida después,
+ * esta sigue usando su propio sufijo, fechas y carpeta de reportes.
+ * @type {import('../models/types.js').InfoCorrida | undefined}
+ */
+let runInfo;
+
 /** Campos que nunca deben verse en una captura. */
 const sensitive = (/** @type {import('playwright').Page} */ page) => [page.locator('input[type="password"]')];
 
 BeforeAll(async function () {
+  runInfo = readRunInfo();
+  // Antes de abrir el navegador: si otra corrida está activa, se aborta sin crear datos.
+  acquireRunLock(runInfo, 'ejecutando');
   browser = await chromium.launch({ headless: !this.parameters?.headed });
 });
 
@@ -40,7 +52,7 @@ Before(async function ({ pickle }) {
   if (!filaTag) {
     throw new Error(`El escenario "${pickle.name}" no tiene tag @fila:. Ejecuta la suite desde prepare-data.`);
   }
-  this.runInfo = readRunInfo();
+  this.runInfo = /** @type {import('../models/types.js').InfoCorrida} */ (runInfo);
   this.row = readRow(filaTag.name.slice('@fila:'.length));
   this.evidenceDir = path.join(ROOT_DIR, this.runInfo.reportDir, 'evidencias', this.row.testCaseId, this.row.idFila);
   fs.mkdirSync(this.evidenceDir, { recursive: true });
@@ -80,6 +92,8 @@ AfterStep(async function ({ pickleStep }) {
 });
 
 After(async function ({ result }) {
+  // Avance de la corrida: evita que su bloqueo de ejecución parezca abandonado.
+  if (runInfo) touchRunLock(runInfo);
   if (!this.context) return; // el Before falló antes de crear el contexto
   const evidencias = { screenshots: /** @type {string[]} */ ([]), trace: '', video: '' };
 
@@ -134,5 +148,10 @@ After(async function ({ result }) {
 });
 
 AfterAll(async function () {
-  await browser?.close();
+  try {
+    await browser?.close();
+  } finally {
+    // Solo libera el bloqueo si es de esta corrida (nunca el de otra).
+    if (runInfo) releaseRunLock(runInfo);
+  }
 });

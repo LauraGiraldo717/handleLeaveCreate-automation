@@ -34,12 +34,16 @@ export function fromIsoDate(iso) {
 /**
  * Regla acordada: LUN = primer lunes estrictamente posterior a la fecha de ejecución
  * (si hoy es lunes, el de la próxima semana); MAR = LUN + 1 día.
+ * semanasAdelante desplaza ambas fechas N semanas (SEMANAS_ADELANTE del .env), para esquivar
+ * fechas ocupadas por otros usuarios de la demo.
  * @param {Date} [today]
+ * @param {number} [semanasAdelante]
  * @returns {{LUN: string, MAR: string}}
  */
-export function computeWeekDates(today = new Date()) {
+export function computeWeekDates(today = new Date(), semanasAdelante = 0) {
   const lun = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 12);
   while (lun.getDay() !== 1) lun.setDate(lun.getDate() + 1);
+  lun.setDate(lun.getDate() + 7 * semanasAdelante);
   const mar = new Date(lun);
   mar.setDate(lun.getDate() + 1);
   return { LUN: toIsoDate(lun), MAR: toIsoDate(mar) };

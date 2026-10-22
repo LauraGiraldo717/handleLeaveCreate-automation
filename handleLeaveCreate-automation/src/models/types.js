@@ -17,6 +17,7 @@
  * Información de la corrida actual, generada por prepare-data en .run/run.json.
  * @typedef {object} InfoCorrida
  * @property {string} runId      Marca de tiempo AAAA-MM-DD_HH-mm-ss.
+ * @property {string} token      Identificador único de la corrida (dueña del bloqueo de ejecución).
  * @property {string} reportDir  Carpeta de reportes de la corrida (relativa a la raíz).
  * @property {string} sufijo     Sufijo único para nombres de datos de prueba (ej. "1020153000").
  * @property {{LUN: string, MAR: string}} fechas Fechas calculadas (AAAA-MM-DD).

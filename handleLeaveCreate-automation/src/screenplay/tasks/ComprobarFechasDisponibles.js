@@ -33,7 +33,8 @@ export const ComprobarFechasDisponibles = {
       if (solapes.length) {
         throw new Error(
           `Precondición no cumplida: el empleado de prueba ya tiene licencias entre ${desde} y ${hasta} ` +
-            '(creadas por otro usuario de la demo). Reintenta más tarde.',
+            '(creadas por otro usuario de la demo). Sube SEMANAS_ADELANTE en el archivo .env ' +
+            '(ej. de 0 a 1) para usar la semana siguiente, o reintenta más tarde.',
         );
       }
     },

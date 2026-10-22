@@ -15,6 +15,17 @@ se omitieron las guías `GUIA_EJECUCION.md`, `ARQUITECTURA.md` y `GUIA_GHERKIN.m
 | `reports/2026-10-21_08-07-21/` | **14/14 PASÓ** | Integración completa |
 | `reports/2026-10-21_12-36-18/` | 8/14 (fallaron las 6 filas ASSIGN) | El empleado vinculado al Admin pasó a llamarse "John Mike Doe" y la demo tenía otros tres "John … Doe": el autocompletado de Assign Leave devolvió 4 coincidencias y la selección por nombre fue ambigua (Playwright se detuvo sin elegir) |
 | `reports/2026-10-21_19-39-12/` | **6/6 PASÓ** (filas ASSIGN, tras el ajuste) | `AsignarLicencia` elige al empleado por su empNumber: posición en la respuesta de sugerencias `/pim/employees?nameOrId=` (mismo orden que en pantalla, verificado en trace) y comprobación del nombre antes de clicar |
+| `reports/2026-10-22_16-25-38/` | 0/14 | "Precondición no cumplida": otro usuario de la demo creó la solicitud 86 (CAN - Personal, 2026-10-23..28, Pending Approval) para el empleado de prueba, ocupando LUN/MAR. Se agregó `SEMANAS_ADELANTE` en `.env` para desplazar las fechas |
+| `reports/2026-10-22_16-33-28/` y `16-34-50/` | 9/14 y 3/14 | **Dos ejecuciones simultáneas** (una por consola y otra desde el menú): compartieron `.run/run.json` (mismo sufijo → 422 al crear tipos), fechas y sesión. Sin residuos en la demo (verificado). No es un defecto de los casos; la suite no admite ejecuciones en paralelo |
+| `reports/2026-10-22_16-46-50/` | **14/14 PASÓ** | Corrida única desde el menú con `SEMANAS_ADELANTE=1` (LUN = 2026-11-02, MAR = 2026-11-03). Limpieza completa en todas las filas |
+
+**Bloqueo de ejecución (2026-10-22):** para evitar otra vez dos corridas simultáneas, `prepare-data`
+toma `.run/lock.json` antes de escribir nada y Cucumber lo confirma en `BeforeAll` antes de abrir el
+navegador; cada fila actualiza su hora de avance y `AfterAll` lo libera. Una segunda ejecución se
+detiene con un mensaje claro sin crear datos. Un bloqueo abandonado caduca a los 2 min (solo
+preparada) o 15 min sin avance (ejecutando). Probado: rechazo de una segunda preparación, aborto de
+Cucumber ante otra corrida activa (0 escenarios, sin evidencias), recuperación de bloqueos
+abandonados y liberación al terminar una corrida real (HLC-TC-007-01 PASÓ).
 
 | TestCaseId | Feature | Modalidad | Fecha | Filas probadas | Resultado | Evidencia | Estado | Observaciones |
 |---|---|---|---|---|---|---|---|---|

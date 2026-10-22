@@ -70,4 +70,17 @@ export const ENV = {
   get password() {
     return required('E2E_PASSWORD');
   },
+  /**
+   * Semanas que se desplazan LUN/MAR (opcional, 0 por defecto). Permite esquivar fechas que
+   * otro usuario de la demo pública ocupó con licencias del empleado de prueba.
+   * @throws {Error} Si no es un entero mayor o igual a 0.
+   */
+  get semanasAdelante() {
+    const raw = (process.env.SEMANAS_ADELANTE ?? '').trim();
+    if (raw === '') return 0;
+    if (!/^\d+$/.test(raw)) {
+      throw new Error(`SEMANAS_ADELANTE en el archivo .env debe ser un número entero (0, 1, 2...); tiene "${raw}".`);
+    }
+    return Number(raw);
+  },
 };
