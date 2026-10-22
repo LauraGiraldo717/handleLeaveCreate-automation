@@ -18,12 +18,20 @@ export const AssignLeavePage = {
    */
   employeeName: (page) => page.getByPlaceholder('Type for hints...'),
   /**
-   * Sugerencia del autocompletado. La app muestra el nombre completo (con segundos nombres),
-   * por eso se busca "Nombre ... Apellido".
-   * @param {Page} page @param {string} firstName @param {string} lastName
+   * Sugerencia del autocompletado por POSICIÓN. En la demo puede haber varios empleados con
+   * el mismo nombre (ej. dos "John Doe"), así que el nombre no basta para elegir: la Task
+   * calcula la posición del empleado en la respuesta de sugerencias de la API, cuyo orden
+   * coincide con el de las opciones en pantalla (verificado en un trace del 2026-10-21).
+   * @param {Page} page @param {number} index
    */
-  employeeOption: (page, firstName, lastName) =>
-    page.getByRole('option', { name: new RegExp(`^${escapeRe(firstName)}\\b.*\\b${escapeRe(lastName)}$`) }),
+  employeeOptionAt: (page, index) => page.getByRole('listbox').getByRole('option').nth(index),
+  /**
+   * Nombre esperado de una sugerencia: la app muestra el nombre completo (con segundos
+   * nombres), por eso se acepta "Nombre ... Apellido". Sirve para verificar la opción elegida.
+   * @param {string} firstName @param {string} lastName
+   */
+  employeeNamePattern: (firstName, lastName) =>
+    new RegExp(`^${escapeRe(firstName)}\\b.*\\b${escapeRe(lastName)}$`),
   /** @param {Page} page */
   assignButton: (page) => page.getByRole('button', { name: 'Assign', exact: true }),
   /**

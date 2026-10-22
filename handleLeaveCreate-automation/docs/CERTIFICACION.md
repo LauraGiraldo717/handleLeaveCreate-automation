@@ -6,10 +6,15 @@ Cada caso se implementa y certifica por separado (Ciclo de certificación). Un c
 Ambiente: demo pública `https://opensource-demo.orangehrmlive.com` (OrangeHRM OS 5.9), usuario Admin.
 
 **Estado final (2026-10-21):** 9/9 casos certificados (14 escenarios). Por decisión de la usuaria
-se omitieron la corrida final de integración desde `ejecutar_pruebas.bat` y las guías
-`GUIA_EJECUCION.md`, `ARQUITECTURA.md` y `GUIA_GHERKIN.md`. La corrida completa más reciente
-ejecutada por consola cubrió 5 filas (HLC-TC-004, 006 y 007); el resto de casos se validó
-por caso.
+se omitieron las guías `GUIA_EJECUCION.md`, `ARQUITECTURA.md` y `GUIA_GHERKIN.md`.
+
+**Integración desde `ejecutar_pruebas.bat` (ejecutada por la usuaria, opciones 1, 5 y 6):**
+
+| Corrida | Resultado | Observaciones |
+|---|---|---|
+| `reports/2026-10-21_08-07-21/` | **14/14 PASÓ** | Integración completa |
+| `reports/2026-10-21_12-36-18/` | 8/14 (fallaron las 6 filas ASSIGN) | El empleado vinculado al Admin pasó a llamarse "John Mike Doe" y la demo tenía otros tres "John … Doe": el autocompletado de Assign Leave devolvió 4 coincidencias y la selección por nombre fue ambigua (Playwright se detuvo sin elegir) |
+| `reports/2026-10-21_19-39-12/` | **6/6 PASÓ** (filas ASSIGN, tras el ajuste) | `AsignarLicencia` elige al empleado por su empNumber: posición en la respuesta de sugerencias `/pim/employees?nameOrId=` (mismo orden que en pantalla, verificado en trace) y comprobación del nombre antes de clicar |
 
 | TestCaseId | Feature | Modalidad | Fecha | Filas probadas | Resultado | Evidencia | Estado | Observaciones |
 |---|---|---|---|---|---|---|---|---|
