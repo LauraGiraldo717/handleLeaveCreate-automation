@@ -7,13 +7,14 @@
  *   Before     → por fila: BrowserContext nuevo (cookies/sesión aisladas) con video y trace,
  *                carga la fila desde el tag @fila:<IdFila> y crea el Actor.
  *   AfterStep  → captura de pantalla por paso, con los campos de contraseña enmascarados.
- *   After      → captura final, limpieza de datos QA-HLC-*, cierre del trace y del video,
+ *   After      → captura final, snapshot visual en Percy (con "percy exec"), limpieza de datos QA-HLC-*, cierre del trace y del video,
  *                y adjunto con datos/rutas/limpieza que usa el reporte resultados.xlsx.
  *   AfterAll   → cierra el navegador y libera el bloqueo de ejecución.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import percySnapshot from '@percy/playwright';
 import { After, AfterAll, AfterStep, Before, BeforeAll, Status, setDefaultTimeout } from '@cucumber/cucumber';
 import { ENV, ROOT_DIR, TIMEOUTS } from '../config/env.js';
 import { readRow, readRunInfo } from '../controller/run-store.js';
@@ -39,6 +40,9 @@ let runInfo;
 
 /** Campos que nunca deben verse en una captura. */
 const sensitive = (/** @type {import('playwright').Page} */ page) => [page.locator('input[type="password"]')];
+
+/** CSS que Percy aplica solo a su snapshot: oculta las claves igual que el mask de las capturas. */
+const PERCY_CSS = 'input[type="password"] { visibility: hidden !important; }';
 
 BeforeAll(async function () {
   runInfo = readRunInfo();
@@ -104,6 +108,14 @@ After(async function ({ result }) {
     this.attach(shot, { mediaType: 'image/png', fileName: '99_final.png' });
   } catch {
     // la página pudo cerrarse por el error; el trace conserva el estado
+  }
+
+  // 1b. Snapshot visual en Percy (solo si la corrida va por "percy exec"; si no, no hace nada).
+  //     Un fallo de Percy se reporta, pero no cambia el resultado de la prueba.
+  try {
+    await percySnapshot(this.page, this.row.idFila, { percyCSS: PERCY_CSS });
+  } catch (error) {
+    this.attach(`No se pudo enviar el snapshot a Percy: ${/** @type {Error} */ (error).message}`);
   }
 
   // 2. Limpieza de datos QA-HLC-* ANTES de cerrar el contexto: la API usa su sesión.
